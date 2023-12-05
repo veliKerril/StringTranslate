@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Главная страница</title>
+</head>
+<body>
+<p>Наш сервис позволяет создавать видео из той строки, которое вы введете ниже!</p>
+
+<form action="/" method="POST">
+    {% csrf_token %}
+    <label for="text">Введите текст для видео: </label>
+    <input type="text" name="text" id="text">
+    <button>Создать</button>
+</form>
+
+<!-- <p>Сделано видео с бегущей строкой "{{ text }}"</p> -->
+
+</body>
+</html>
