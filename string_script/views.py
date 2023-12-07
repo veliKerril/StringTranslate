@@ -3,7 +3,13 @@ from django.shortcuts import render
 from moviepy.editor import TextClip, ColorClip, CompositeVideoClip
 from transliterate import translit
 from string_script.models import Requests
-import json
+
+
+def save_request(request):
+    if request.method == 'POST':
+        Requests(method='POST', text=request.POST.get('text'), headers=str(request.headers)).save()
+    else:
+        Requests(method='GET', headers=str(request.headers)).save()
 
 
 def string_script(text, bg_color, text_color, font, v_size, v_time):
@@ -30,32 +36,29 @@ def string_script(text, bg_color, text_color, font, v_size, v_time):
     video.write_videofile("moving_text.mp4", fps=60)
 
 
+def download_video(request):
+    text = request.POST.get('text')
+    bg_color = request.POST.get('bg_color', '0, 0, 0')
+    text_color = request.POST.get('text_color', 'white')
+    font = request.POST.get('font', 'Arial')
+    v_size = request.POST.get('v_size', '100')
+    v_time = request.POST.get('v_time', '3')
+
+    string_script(text, bg_color, text_color, font, v_size, v_time)
+
+    path = 'moving_text.mp4'
+    with open(f'{path}', 'rb') as f:
+        data = f.read()
+
+    name_of_video = translit(text.split()[0], language_code='ru', reversed=True)
+    response = HttpResponse(data, content_type='application/force-download')
+    response['Content-Disposition'] = f'attachment; filename={name_of_video}.mp4'
+    return response
+
+
 def main(request):
+    save_request(request)
     if request.method == 'POST':
-
-        print(request.POST)
-        text = request.POST.get('text')
-        bg_color = request.POST.get('bg_color', '0, 0, 0')
-        text_color = request.POST.get('text_color', 'white')
-        font = request.POST.get('font', 'Arial')
-        v_size = request.POST.get('v_size', '100')
-        v_time = request.POST.get('v_time', '3')
-
-        # r = Requests(method='POST', text=request.POST.get('text'), headers=str(request.headers))
-        # r.save()
-
-        string_script(text, bg_color, text_color, font, v_size, v_time)
-
-        path = 'moving_text.mp4'
-
-        with open(f'{path}', 'rb') as f:
-            data = f.read()
-
-        name_of_video = translit(text.split()[0], language_code='ru', reversed=True)
-        response = HttpResponse(data, content_type='application/force-download')
-        response['Content-Disposition'] = f'attachment; filename={name_of_video}.mp4'
-        return response
-
-    # r = Requests(method='GET', headers=str(request.headers))
-    # r.save()
-    return render(request, 'string_script/main_page.html')
+        return download_video(request)
+    elif request.method == 'GET':
+        return render(request, 'string_script/main_page.html')
